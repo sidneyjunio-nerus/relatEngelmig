@@ -1,0 +1,17 @@
+{
+  "name": "relatengelmig",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Base local para orçamento moderno a partir de TXT do NW",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.6.1",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "mysql2": "^3.14.5"
+  }
+}

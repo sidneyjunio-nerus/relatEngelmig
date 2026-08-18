@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nérus - Orçamento com imagem</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <main class="container">
+      <header class="page-header">
+        <h1>Orçamento <span class="brand-mark">Nérus</span></h1>
+        <p>Informe loja e pedido para localizar o TXT/PRN.</p>
+        <p class="base-chip">Base de busca: <code><%= baseInfo.printRoot %></code></p>
+      </header>
+
+      <section class="search-panel">
+        <form method="post" action="/orcamento" class="search-form js-loading-form">
+          <label>
+            Loja
+            <input type="text" name="loja" value="<%= form.loja %>" required />
+          </label>
+
+          <label>
+            Pedido
+            <input type="text" name="pedido" value="<%= form.pedido %>" required />
+          </label>
+
+          <button type="submit">Buscar orçamento</button>
+        </form>
+        <% if (baseInfo.usedPath) { %>
+        <p class="base-used">Arquivo encontrado: <code><%= baseInfo.usedPath %></code></p>
+        <% } %>
+      </section>
+
+      <% if (error) { %>
+      <div class="alert error"><%= error %></div>
+      <% } %>
+
+      <% if (budget) { %>
+      <% 
+        const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+        const fmtMoney = (raw, num) => (raw && raw !== "-" ? raw : (typeof num === "number" ? brl.format(num) : "-"));
+        const fmtQty = (raw, num) => (raw && raw !== "-" ? raw : (typeof num === "number" ? String(num) : "-"));
+        const lojaLabel = budget.storeName || budget.fields.LJNA || budget.loja || "-";
+        const lojaNo = budget.storeNo || budget.loja || "-";
+        const orcamentoNo = budget.fields.PDNO || budget.pedido || "-";
+        const clienteLabel = budget.fields.CTNO ? `${budget.fields.CTNO} - ${budget.fields.CTNA || ""}` : (budget.fields.CTNA || "-");
+        const lojaEndereco = [budget.fields.LJEN, budget.fields.LJBA, budget.fields.LJCD].filter(Boolean).join(" - ");
+        const lojaCidadeUf = [budget.fields.LJCD, budget.fields.LJUF].filter(Boolean).join("/");
+      %>
+      <section class="budget budget-modern">
+        <div class="budget-top">
+          <div class="budget-title-wrap">
+            <h2>Orçamento moderno</h2>
+            <p>Layout inspirado no modelo PDF com área reservada para logo.</p>
+          </div>
+          <button onclick="window.print()" type="button">Imprimir / PDF</button>
+        </div>
+
+        <article class="quote-sheet">
+          <header class="quote-header">
+            <div class="logo-slot" aria-label="Espaço para logo">
+              <span>LOGO</span>
+            </div>
+            <div class="quote-main-meta">
+              <p class="quote-number-label">ORÇAMENTO Nº</p>
+              <p class="quote-number"><%= orcamentoNo %></p>
+              <p class="quote-vendor">Vendedor: <%= budget.fields.SPNO ? `${budget.fields.SPNO} - ${budget.fields.SPAP || ""}` : (budget.fields.SPAP || "-") %></p>
+              <p class="quote-store">Loja <%= lojaLabel %> (#<%= lojaNo %>)</p>
+            </div>
+          </header>
+
+          <section class="quote-client-card">
+            <h3>Dados do cliente</h3>
+            <div class="quote-info-grid">
+              <p><span>Cliente</span><strong><%= clienteLabel %></strong></p>
+              <p><span>Data</span><strong><%= budget.fields.DATA || "-" %></strong></p>
+              <p><span>Endereço</span><strong><%= budget.fields.CTED || "-" %></strong></p>
+              <p><span>Bairro</span><strong><%= budget.fields.CTBA || "-" %></strong></p>
+              <p><span>Cidade</span><strong><%= budget.fields.CTCD || "-" %></strong></p>
+              <p><span>Arquivo base</span><strong><%= budget.arquivoBase || "-" %></strong></p>
+            </div>
+          </section>
+
+          <section class="items-block">
+            <div class="items-header-row">
+              <h3>Itens do orçamento</h3>
+              <p class="items-count"><strong><%= budget.totalItens %></strong> item(ns)</p>
+            </div>
+
+            <div class="table-wrap quote-items-wrap">
+              <table class="items-table quote-items-table">
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th>Produto</th>
+                    <th>Quantidade</th>
+                    <th>Valores</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% budget.items.forEach((item) => { %>
+                  <tr>
+                    <td class="cell-photo">
+                      <img class="table-photo quote-photo" src="<%= item.fotoUrl %>" alt="Foto do produto <%= item.ean || item.sku || item.codigo %>" loading="lazy" />
+                    </td>
+                    <td>
+                      <p class="item-name"><%= item.nome || "-" %></p>
+                      <p class="item-meta">Cód. <%= item.codigo || "-" %> · Grade <%= item.grade || "-" %></p>
+                      <p class="item-meta">EAN <%= item.ean || "-" %> · SKU <%= item.sku || item.codigo || "-" %></p>
+                    </td>
+                    <td class="cell-qty"><%= fmtQty(item.quantidadeRaw, item.quantidade) %></td>
+                    <td class="cell-values">
+                      <p>Unitário: <strong><%= fmtMoney(item.valorUnitarioRaw, item.valorUnitario) %></strong></p>
+                      <p>Total: <strong><%= fmtMoney(item.totalLinhaRaw, item.totalLinha) %></strong></p>
+                    </td>
+                  </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="quote-totals">
+            <div class="totals-card">
+              <p><span>VALOR DA COMPRA</span><strong><%= fmtMoney(budget.totals.SUBT, budget.totals.subtotal) %></strong></p>
+              <p><span>FRETE / EXTRAS</span><strong><%= fmtMoney(budget.totals.ACPO, budget.totals.acrescimo) %></strong></p>
+              <p><span>DESCONTO TOTAL</span><strong><%= fmtMoney(budget.totals.DESC, budget.totals.desconto) %></strong></p>
+              <p class="total-final"><span>TOTAL</span><strong><%= fmtMoney(budget.totals.TDAC, budget.totals.totalFinal) %></strong></p>
+            </div>
+          </section>
+
+          <footer class="quote-footer">
+            <p><strong>ENDEREÇO DA LOJA:</strong> <%= lojaEndereco || "-" %></p>
+            <p><strong>CIDADE/UF:</strong> <%= lojaCidadeUf || "-" %></p>
+            <p><strong>TELEFONE:</strong> <%= budget.fields.LJTL || "-" %></p>
+          </footer>
+        </article>
+      </section>
+      <% } %>
+    </main>
+
+    <div class="loading-overlay" aria-hidden="true">
+      <div class="loading-card">
+        <div class="spinner"></div>
+        <h3>Varredura em andamento</h3>
+        <p class="loading-status" data-loading-status>Localizando arquivos de orçamento...</p>
+      </div>
+    </div>
+
+    <script>
+      (() => {
+        const forms = document.querySelectorAll(".js-loading-form");
+        const statusEl = document.querySelector("[data-loading-status]");
+        const steps = [
+          "Localizando arquivos de orçamento...",
+          "Validando loja e pedido...",
+          "Conferindo produtos e imagens...",
+          "Montando orçamento moderno..."
+        ];
+        let intervalId = null;
+        let index = 0;
+
+        function startLoading() {
+          if (document.body.classList.contains("loading")) return;
+          document.body.classList.add("loading");
+          if (!statusEl) return;
+          statusEl.textContent = steps[0];
+          intervalId = setInterval(() => {
+            index = (index + 1) % steps.length;
+            statusEl.textContent = steps[index];
+          }, 900);
+        }
+
+        forms.forEach((form) => {
+          form.addEventListener("submit", () => {
+            startLoading();
+            form.querySelectorAll("button[type='submit']").forEach((btn) => {
+              btn.setAttribute("disabled", "disabled");
+            });
+          });
+        });
+
+        window.addEventListener("pageshow", () => {
+          if (intervalId) clearInterval(intervalId);
+          document.body.classList.remove("loading");
+        });
+      })();
+    </script>
+  </body>
+</html>
