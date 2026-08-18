@@ -1,0 +1,18 @@
+services:
+  relatengelmig:
+    #image: ${GHCR_IMAGE}
+    build: .
+    container_name: relatengelmig
+    restart: unless-stopped
+
+    env_file:
+      - .env
+
+    ports:
+      - "${PORT:-3210}:3210"
+
+    volumes:
+      - "${CLIENT_PRINT_ROOT}:/v/saci/print"
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

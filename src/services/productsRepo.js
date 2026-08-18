@@ -38,6 +38,8 @@ function createProductsRepo(mysqlConfig) {
     const prdnoDigits = prdno.replace(/\D/g, "");
     const barcode = normalizeCode(row.barcode);
     const barcodeDigits = barcode.replace(/\D/g, "");
+    const itemGrade = normalizeCode(item?.grade);
+    const rowGrade = normalizeCode(row.gradeCode);
 
     let score = 0;
     for (const code of normalizedValues) {
@@ -46,6 +48,14 @@ function createProductsRepo(mysqlConfig) {
       if (code === barcode) score += 110;
       if (codeDigits && codeDigits === prdnoDigits) score += 80;
       if (codeDigits && codeDigits === barcodeDigits) score += 70;
+    }
+
+    if (itemGrade && rowGrade) {
+      if (itemGrade === rowGrade) {
+        score += 95;
+      } else if (itemGrade.slice(0, 4) && rowGrade.startsWith(itemGrade.slice(0, 4))) {
+        score += 35;
+      }
     }
 
     if (row.hasPicture) score += 20;
@@ -70,12 +80,16 @@ function createProductsRepo(mysqlConfig) {
         TRIM(p.name) AS nome,
         TRIM(pb.barcode) AS barcode_grade,
         TRIM(p.barcode) AS barcode_prd,
+        TRIM(pb.grade) AS grade_code,
+        TRIM(COALESCE(gn.name, '')) AS grade_name,
         pp.seqno AS seqno,
         TRIM(COALESCE(pp.urlImagem, '')) AS urlImagem,
         pp.foto IS NOT NULL AS hasPicture
       FROM prd p
       LEFT JOIN prdbar pb
         ON pb.prdno = p.no
+      LEFT JOIN grdnam gn
+        ON TRIM(gn.valno) = LEFT(TRIM(pb.grade), 4)
       LEFT JOIN prdpicture pp
         ON pp.prdno = p.no
        AND (pp.grade = pb.grade OR pp.grade = '' OR pp.grade IS NULL)
@@ -92,6 +106,8 @@ function createProductsRepo(mysqlConfig) {
       prdno: normalizeCode(row.prdno),
       nome: normalizeCode(row.nome),
       barcode: normalizeCode(row.barcode_grade || row.barcode_prd),
+      gradeCode: normalizeCode(row.grade_code),
+      gradeName: normalizeCode(row.grade_name),
       seqno: row.seqno ? Number(row.seqno) : null,
       urlImagem: normalizeCode(row.urlImagem),
       hasPicture: Boolean(row.hasPicture),
@@ -120,6 +136,8 @@ function createProductsRepo(mysqlConfig) {
           codigo: code,
           prdno: best.prdno,
           barcode: best.barcode,
+          gradeCode: best.gradeCode,
+          gradeName: best.gradeName,
           nome: best.nome || "Produto sem nome",
           fotoUrl: buildPhotoUrl(best)
         });
@@ -167,10 +185,65 @@ function createProductsRepo(mysqlConfig) {
     };
   }
 
+  async function getCustomerByNo(customerNo) {
+    const number = Number.parseInt(String(customerNo || "").trim(), 10);
+    if (!Number.isFinite(number) || number <= 0) return null;
+
+    const query = `
+      SELECT
+        c.no AS codigo,
+        TRIM(c.name) AS nome,
+        TRIM(c.cpf_cgc) AS cpf,
+        c.birthday AS birthdayRaw,
+        CASE
+          WHEN c.birthday > 0
+            THEN DATE_FORMAT(STR_TO_DATE(CAST(c.birthday AS CHAR), '%Y%m%d'), '%d/%m/%Y')
+          ELSE NULL
+        END AS nascimento,
+        TRIM(COALESCE(c.email, '')) AS email,
+        TRIM(COALESCE(c.ddd, '')) AS ddd,
+        TRIM(COALESCE(c.tel, '')) AS tel,
+        TRIM(COALESCE(c.celular, '')) AS celular,
+        TRIM(COALESCE(c.add1, '')) AS endereco,
+        TRIM(COALESCE(c.number1, '')) AS numero,
+        TRIM(COALESCE(c.addComplemento, '')) AS complemento,
+        TRIM(COALESCE(c.nei1, '')) AS bairro,
+        TRIM(COALESCE(c.city1, '')) AS cidade,
+        TRIM(COALESCE(c.state1, '')) AS uf,
+        TRIM(COALESCE(c.zip, '')) AS cep
+      FROM custp c
+      WHERE c.no = ?
+      LIMIT 1
+    `;
+
+    const [rows] = await pool.query(query, [number]);
+    const row = rows?.[0];
+    if (!row) return null;
+
+    return {
+      codigo: String(row.codigo || "").trim(),
+      nome: normalizeCode(row.nome),
+      cpf: normalizeCode(row.cpf),
+      nascimento: normalizeCode(row.nascimento),
+      email: normalizeCode(row.email),
+      ddd: normalizeCode(row.ddd),
+      tel: normalizeCode(row.tel),
+      celular: normalizeCode(row.celular),
+      endereco: normalizeCode(row.endereco),
+      numero: normalizeCode(row.numero),
+      complemento: normalizeCode(row.complemento),
+      bairro: normalizeCode(row.bairro),
+      cidade: normalizeCode(row.cidade),
+      uf: normalizeCode(row.uf),
+      cep: normalizeCode(row.cep)
+    };
+  }
+
   return {
     getProductsByBudgetItems,
     getPictureBySeqno,
-    getStoreByNo
+    getStoreByNo,
+    getCustomerByNo
   };
 }
 

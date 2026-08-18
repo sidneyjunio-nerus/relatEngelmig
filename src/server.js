@@ -23,21 +23,6 @@ app.set("views", path.join(__dirname, "..", "views"));
 app.use(express.urlencoded({ extended: true }));
 app.use("/static", express.static(path.join(__dirname, "..", "public")));
 
-function normalizeCompare(value) {
-  return String(value || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]/gi, "")
-    .toLowerCase();
-}
-
-function isStoreCompatible({ expectedStoreName, parsedStoreName }) {
-  const expected = normalizeCompare(expectedStoreName);
-  const parsed = normalizeCompare(parsedStoreName);
-  if (!expected || !parsed) return true;
-  return expected.includes(parsed) || parsed.includes(expected);
-}
-
 app.get("/", (_req, res) => {
   res.render("index", {
     error: null,
@@ -74,33 +59,19 @@ app.post("/orcamento", async (req, res) => {
   }
 
   try {
-    const store = await productsRepo.getStoreByNo(loja);
-    const storeName = store?.name || "";
-    let usedPath = "";
-    let searchMetrics = { scannedFiles: 0, elapsedMs: 0 };
-    let parsed;
+    console.info(`[BUSCA] Iniciando busca de orçamento | loja="${loja}" pedido="${pedido}" root="${config.printRoot}"`);
 
-    const strictNeedles = [pedido, storeName || loja];
-    const strictSearch = await findBudgetFileByNeedles({
+    const searchResult = await findBudgetFileByNeedles({
       rootDir: config.printRoot,
-      needles: strictNeedles
+      needles: [loja, pedido]
     });
 
-    if (strictSearch.foundPath) {
-      parsed = await readAndParseBudgetFile(strictSearch.foundPath, { loja, pedido });
-      const isCompatible = isStoreCompatible({
-        expectedStoreName: storeName,
-        parsedStoreName: parsed.fields.LJNA
-      });
-      if (isCompatible) {
-        usedPath = strictSearch.foundPath;
-        searchMetrics = strictSearch;
-      }
-    }
-
-    if (!usedPath) {
+    if (!searchResult.foundPath) {
+      console.warn(
+        `[BUSCA] Pedido não encontrado | loja="${loja}" pedido="${pedido}" scannedFiles=${searchResult.scannedFiles} elapsedMs=${searchResult.elapsedMs}`
+      );
       return res.status(404).render("index", {
-        error: `Pedido "${pedido}" da loja "${storeName || loja}" não foi encontrado no diretório ${config.printRoot}.`,
+        error: `Pedido "${pedido}" da loja "${loja}" não foi encontrado no diretório ${config.printRoot}.`,
         warning: null,
         budget: null,
         baseInfo: { printRoot: config.printRoot, usedPath: null },
@@ -108,29 +79,46 @@ app.post("/orcamento", async (req, res) => {
       });
     }
 
-    const parsedBudget = parsed || (await readAndParseBudgetFile(usedPath, { loja, pedido }));
+    console.info(
+      `[BUSCA] Arquivo encontrado | path="${searchResult.foundPath}" scannedFiles=${searchResult.scannedFiles} elapsedMs=${searchResult.elapsedMs}`
+    );
+
+    const parsedBudget = await readAndParseBudgetFile(searchResult.foundPath, { loja, pedido });
+    console.info(
+      `[PARSER] Parse concluído | ljna="${parsedBudget.fields?.LJNA || ""}" ljno="${parsedBudget.fields?.LJNO || ""}" pdno="${parsedBudget.fields?.PDNO || ""}" itens=${parsedBudget.items?.length || 0}`
+    );
+
     const products = await productsRepo.getProductsByBudgetItems({ items: parsedBudget.items });
+    console.info(`[MYSQL] Produtos carregados | encontrados=${products.length}`);
+    const customer = await productsRepo.getCustomerByNo(parsedBudget.fields?.CTNO);
+    console.info(
+      `[MYSQL] Cliente carregado | ctno="${parsedBudget.fields?.CTNO || ""}" encontrado=${Boolean(customer)}`
+    );
 
     const budget = buildBudgetViewModel({
       parsed: parsedBudget,
       products,
-      store,
+      store: null,
+      customer,
       defaultPhoto: config.defaultPhoto,
-      foundPath: usedPath,
+      foundPath: searchResult.foundPath,
       metrics: {
-        scannedFiles: searchMetrics.scannedFiles || 0,
-        elapsedMs: searchMetrics.elapsedMs || 0
+        scannedFiles: searchResult.scannedFiles || 0,
+        elapsedMs: searchResult.elapsedMs || 0
       }
     });
+
+    console.info(`[ORCAMENTO] Render pronto | loja="${loja}" pedido="${pedido}" totalItens=${budget.totalItens}`);
 
     return res.render("index", {
       error: null,
       warning: null,
       budget,
-      baseInfo: { printRoot: config.printRoot, usedPath },
+      baseInfo: { printRoot: config.printRoot, usedPath: searchResult.foundPath },
       form: { loja, pedido }
     });
   } catch (error) {
+    console.error(`[ORCAMENTO] Erro no processamento | loja="${loja}" pedido="${pedido}"`, error);
     return res.status(500).render("index", {
       error: `Falha ao processar orçamento: ${error.message}`,
       warning: null,

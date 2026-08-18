@@ -1,4 +1,4 @@
-function buildBudgetViewModel({ parsed, products, store, defaultPhoto, foundPath, metrics }) {
+function buildBudgetViewModel({ parsed, products, store, customer, defaultPhoto, foundPath, metrics }) {
   const byCodigo = new Map(products.map((item) => [String(item.codigo || ""), item]));
   const byCodigoEan = new Map(
     products.map((item) => [`${String(item.codigo || "")}|${String(item.barcode || "")}`, item])
@@ -12,9 +12,18 @@ function buildBudgetViewModel({ parsed, products, store, defaultPhoto, foundPath
     const codeKey = String(item.codigo || "");
     const barcodeKey = String(item.barcode || "");
     const fromDb = byCodigoEan.get(`${codeKey}|${barcodeKey}`) || byCodigo.get(codeKey);
+    const gradeRaw = String(item.grade || "").trim();
+    const gradeFriendly = String(fromDb?.gradeName || "").trim();
+    const gradeDisplay = gradeFriendly
+      ? gradeRaw && gradeRaw !== gradeFriendly
+        ? `${gradeFriendly} (${gradeRaw})`
+        : gradeFriendly
+      : gradeRaw;
+
     return {
       codigo: item.codigo || ean,
-      grade: item.grade || "",
+      grade: gradeDisplay || "",
+      unidade: item.unidade || "",
       ean: fromDb?.barcode || item.barcode || null,
       sku: fromDb?.prdno || item.codigo || null,
       nome: fromDb?.nome || item.descricao || "Produto sem nome (pendente de mapeamento)",
@@ -31,10 +40,11 @@ function buildBudgetViewModel({ parsed, products, store, defaultPhoto, foundPath
   return {
     loja: parsed.loja,
     storeName: store?.name || parsed.fields?.LJNA || parsed.loja,
-    storeNo: store?.no || parsed.loja,
+    storeNo: store?.no || parsed.fields?.LJNO || parsed.loja,
     pedido: parsed.pedido,
     fields: parsed.fields || {},
     totals: parsed.totals || {},
+    customer: customer || null,
     arquivoBase: foundPath,
     totalItens: items.length,
     metrics,

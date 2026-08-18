@@ -11,7 +11,6 @@
       <header class="page-header">
         <h1>Orçamento <span class="brand-mark">Nérus</span></h1>
         <p>Informe loja e pedido para localizar o TXT/PRN.</p>
-        <p class="base-chip">Base de busca: <code><%= baseInfo.printRoot %></code></p>
       </header>
 
       <section class="search-panel">
@@ -28,9 +27,6 @@
 
           <button type="submit">Buscar orçamento</button>
         </form>
-        <% if (baseInfo.usedPath) { %>
-        <p class="base-used">Arquivo encontrado: <code><%= baseInfo.usedPath %></code></p>
-        <% } %>
       </section>
 
       <% if (error) { %>
@@ -41,101 +37,154 @@
       <% 
         const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
         const fmtMoney = (raw, num) => (raw && raw !== "-" ? raw : (typeof num === "number" ? brl.format(num) : "-"));
+        const fmtMoneyZero = (raw, num) => (raw && raw !== "-" ? raw : (typeof num === "number" ? brl.format(num) : brl.format(0)));
         const fmtQty = (raw, num) => (raw && raw !== "-" ? raw : (typeof num === "number" ? String(num) : "-"));
+        const stripCodePrefix = (value) => String(value || "").replace(/^\s*\d+\s*-\s*/i, "").trim();
         const lojaLabel = budget.storeName || budget.fields.LJNA || budget.loja || "-";
         const lojaNo = budget.storeNo || budget.loja || "-";
         const orcamentoNo = budget.fields.PDNO || budget.pedido || "-";
-        const clienteLabel = budget.fields.CTNO ? `${budget.fields.CTNO} - ${budget.fields.CTNA || ""}` : (budget.fields.CTNA || "-");
-        const lojaEndereco = [budget.fields.LJEN, budget.fields.LJBA, budget.fields.LJCD].filter(Boolean).join(" - ");
-        const lojaCidadeUf = [budget.fields.LJCD, budget.fields.LJUF].filter(Boolean).join("/");
+        const customer = budget.customer || {};
+        const customerCode = customer.codigo || budget.fields.CTNO || "";
+        const customerName = customer.nome || budget.fields.CTNA || "-";
+        const customerCpf = customer.cpf || "-";
+        const customerNascimento = customer.nascimento || "-";
+        const customerEmail = customer.email || "-";
+        const customerTel = [customer.ddd, customer.tel].filter(Boolean).join(" ").replace(/\s+/g, " ").trim() || budget.fields.CTTL || "-";
+        const customerCel = customer.celular && customer.celular !== "0" ? customer.celular : "-";
+        const customerEndereco = customer.endereco || budget.fields.CTED || "-";
+        const customerNumero = customer.numero || "";
+        const customerCompl = customer.complemento || "";
+        const customerBairro = customer.bairro || budget.fields.CTBA || "-";
+        const customerCidade = customer.cidade || budget.fields.CTCD || "-";
+        const customerUf = customer.uf || "";
+        const customerCep = customer.cep ? customer.cep.split(/\s+/)[0] : "-";
+        const lojaEndereco = [budget.fields.LJEN, budget.fields.LJBA].filter(Boolean).join(" - ");
+        const lojaCidadeUf = [budget.fields.LJCD, budget.fields.LJUF].filter(Boolean).join(" / ");
+        const vendedorLabel = budget.fields.SPNO ? `${budget.fields.SPNO} - ${budget.fields.SPAP || ""}` : (budget.fields.SPAP || "-");
+        const customerCityState = [customerCidade, customerUf].filter(Boolean).join(" - ");
+        const paymentLabel = stripCodePrefix(budget.totals.PAGC || budget.fields.PGTO || "") || "0";
       %>
       <section class="budget budget-modern">
         <div class="budget-top">
           <div class="budget-title-wrap">
-            <h2>Orçamento moderno</h2>
-            <p>Layout inspirado no modelo PDF com área reservada para logo.</p>
+            <h2>Prévia do orçamento</h2>
+            <p>Layout moderno e limpo, no padrão visual do PDF de referência.</p>
           </div>
           <button onclick="window.print()" type="button">Imprimir / PDF</button>
         </div>
 
         <article class="quote-sheet">
-          <header class="quote-header">
-            <div class="logo-slot" aria-label="Espaço para logo">
-              <span>LOGO</span>
-            </div>
-            <div class="quote-main-meta">
-              <p class="quote-number-label">ORÇAMENTO Nº</p>
-              <p class="quote-number"><%= orcamentoNo %></p>
-              <p class="quote-vendor">Vendedor: <%= budget.fields.SPNO ? `${budget.fields.SPNO} - ${budget.fields.SPAP || ""}` : (budget.fields.SPAP || "-") %></p>
-              <p class="quote-store">Loja <%= lojaLabel %> (#<%= lojaNo %>)</p>
-            </div>
-          </header>
+          <section class="quote-top-card">
+            <header class="quote-header">
+              <div class="quote-head-main">
+                <div>
+                  <p class="quote-label">ORÇAMENTO Nº</p>
+                  <h3><%= orcamentoNo %></h3>
+                </div>
+                <p class="quote-brand">abc da construção</p>
+              </div>
+              <p class="quote-vendor">Vendedor: <strong><%= vendedorLabel %></strong></p>
+            </header>
 
-          <section class="quote-client-card">
-            <h3>Dados do cliente</h3>
-            <div class="quote-info-grid">
-              <p><span>Cliente</span><strong><%= clienteLabel %></strong></p>
-              <p><span>Data</span><strong><%= budget.fields.DATA || "-" %></strong></p>
-              <p><span>Endereço</span><strong><%= budget.fields.CTED || "-" %></strong></p>
-              <p><span>Bairro</span><strong><%= budget.fields.CTBA || "-" %></strong></p>
-              <p><span>Cidade</span><strong><%= budget.fields.CTCD || "-" %></strong></p>
-              <p><span>Arquivo base</span><strong><%= budget.arquivoBase || "-" %></strong></p>
-            </div>
+            <section class="quote-section">
+              <h4>Dados do cliente</h4>
+              <div class="client-grid">
+                <div>
+                  <p class="client-name"><%= customerName %></p>
+                  <% if (customerCode) { %>
+                  <p class="client-line with-icon">
+                    <span class="ci-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" class="ci-icon-svg"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="12" r="2"/><path d="M14 10h4M14 13h4"/></svg>
+                    </span>
+                    <span><%= customerCode %></span>
+                  </p>
+                  <% } %>
+                  <p class="client-line with-icon">
+                    <span class="ci-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" class="ci-icon-svg"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 14c1.4-2 3.6-2 5 0"/><circle cx="8.5" cy="10.5" r="1"/><circle cx="12.5" cy="10.5" r="1"/></svg>
+                    </span>
+                    <span><%= customerCpf %></span>
+                  </p>
+                  <p class="client-line with-icon">
+                    <span class="ci-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" class="ci-icon-svg"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 9h18"/></svg>
+                    </span>
+                    <span><%= customerNascimento %></span>
+                  </p>
+                </div>
+                <div>
+                  <p class="client-line with-icon">
+                    <span class="ci-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" class="ci-icon-svg"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg>
+                    </span>
+                    <span><%= customerEmail %></span>
+                  </p>
+                  <p class="client-line with-icon">
+                    <span class="ci-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" class="ci-icon-svg"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 2 .7 2.9a2 2 0 0 1-.5 2.1L8 10.1a16 16 0 0 0 6 6l1.4-1.3a2 2 0 0 1 2.1-.5c.9.4 1.9.6 2.9.7a2 2 0 0 1 1.6 1.9Z"/></svg>
+                    </span>
+                    <span><%= customerTel %></span>
+                  </p>
+                  <p class="client-line with-icon">
+                    <span class="ci-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" class="ci-icon-svg"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>
+                    </span>
+                    <span><%= customerCel %></span>
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <section class="quote-section">
+              <h4>Endereço de entrega</h4>
+              <article class="address-card">
+                <h5>Entrega</h5>
+                <p><%= customerEndereco %><%= customerNumero ? `, ${customerNumero}` : "" %></p>
+                <% if (customerCompl) { %><p><%= customerCompl %></p><% } %>
+                <p><%= customerBairro %></p>
+                <p><%= customerCityState || "-" %></p>
+                <p>CEP: <%= customerCep %></p>
+              </article>
+            </section>
           </section>
 
-          <section class="items-block">
-            <div class="items-header-row">
-              <h3>Itens do orçamento</h3>
-              <p class="items-count"><strong><%= budget.totalItens %></strong> item(ns)</p>
-            </div>
+          <section class="quote-items-card">
+            <section class="quote-section">
+              <div class="items-head">
+                <h4>Itens</h4>
+                <span class="items-count"><%= budget.totalItens %> item(ns)</span>
+              </div>
+              <div class="items-list">
+                <% budget.items.forEach((item) => { %>
+                <article class="product-card">
+                  <img class="product-photo" src="<%= item.fotoUrl %>" alt="Foto do produto <%= item.ean || item.sku || item.codigo %>" loading="lazy" />
+                  <div class="product-main">
+                    <p class="product-name"><%= item.nome || "-" %></p>
+                    <p class="product-meta">Cód. <%= item.codigo || "-" %> · Grade <%= item.grade || "-" %> · UN <%= item.unidade || "-" %></p>
+                  </div>
+                  <div class="product-side">
+                    <p class="qty-value"><%= fmtQty(item.quantidadeRaw, item.quantidade) %></p>
+                    <p class="qty-label">Quantidade</p>
+                  </div>
+                </article>
+                <% }) %>
+              </div>
+            </section>
 
-            <div class="table-wrap quote-items-wrap">
-              <table class="items-table quote-items-table">
-                <thead>
-                  <tr>
-                    <th>Item</th>
-                    <th>Produto</th>
-                    <th>Quantidade</th>
-                    <th>Valores</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <% budget.items.forEach((item) => { %>
-                  <tr>
-                    <td class="cell-photo">
-                      <img class="table-photo quote-photo" src="<%= item.fotoUrl %>" alt="Foto do produto <%= item.ean || item.sku || item.codigo %>" loading="lazy" />
-                    </td>
-                    <td>
-                      <p class="item-name"><%= item.nome || "-" %></p>
-                      <p class="item-meta">Cód. <%= item.codigo || "-" %> · Grade <%= item.grade || "-" %></p>
-                      <p class="item-meta">EAN <%= item.ean || "-" %> · SKU <%= item.sku || item.codigo || "-" %></p>
-                    </td>
-                    <td class="cell-qty"><%= fmtQty(item.quantidadeRaw, item.quantidade) %></td>
-                    <td class="cell-values">
-                      <p>Unitário: <strong><%= fmtMoney(item.valorUnitarioRaw, item.valorUnitario) %></strong></p>
-                      <p>Total: <strong><%= fmtMoney(item.totalLinhaRaw, item.totalLinha) %></strong></p>
-                    </td>
-                  </tr>
-                  <% }) %>
-                </tbody>
-              </table>
-            </div>
+            <section class="quote-totals">
+              <div class="totals-card">
+                <p><span>Condição de pagamento</span><strong><%= paymentLabel %></strong></p>
+                <p><span>Valor da compra</span><strong><%= fmtMoneyZero(budget.totals.SUBT, budget.totals.subtotal) %></strong></p>
+                <p><span>Acréscimo</span><strong><%= fmtMoneyZero(budget.totals.ACPO, budget.totals.acrescimo) %></strong></p>
+                <p><span>Desconto total</span><strong><%= fmtMoneyZero(budget.totals.DESC, budget.totals.desconto) %></strong></p>
+                <p class="total-final"><span>TOTAL</span><strong><%= fmtMoneyZero(budget.totals.TDAC, budget.totals.totalFinal) %></strong></p>
+              </div>
+              <div class="store-footer">
+                <p>ENDEREÇO DA LOJA: <strong><%= lojaEndereco || "-" %> - <%= lojaCidadeUf || "-" %></strong></p>
+                <p>TELEFONE: <strong><%= budget.fields.LJTL || "-" %></strong></p>
+              </div>
+            </section>
           </section>
-
-          <section class="quote-totals">
-            <div class="totals-card">
-              <p><span>VALOR DA COMPRA</span><strong><%= fmtMoney(budget.totals.SUBT, budget.totals.subtotal) %></strong></p>
-              <p><span>FRETE / EXTRAS</span><strong><%= fmtMoney(budget.totals.ACPO, budget.totals.acrescimo) %></strong></p>
-              <p><span>DESCONTO TOTAL</span><strong><%= fmtMoney(budget.totals.DESC, budget.totals.desconto) %></strong></p>
-              <p class="total-final"><span>TOTAL</span><strong><%= fmtMoney(budget.totals.TDAC, budget.totals.totalFinal) %></strong></p>
-            </div>
-          </section>
-
-          <footer class="quote-footer">
-            <p><strong>ENDEREÇO DA LOJA:</strong> <%= lojaEndereco || "-" %></p>
-            <p><strong>CIDADE/UF:</strong> <%= lojaCidadeUf || "-" %></p>
-            <p><strong>TELEFONE:</strong> <%= budget.fields.LJTL || "-" %></p>
-          </footer>
         </article>
       </section>
       <% } %>
