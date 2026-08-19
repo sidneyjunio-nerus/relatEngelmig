@@ -315,9 +315,13 @@ button:disabled {
 }
 
 .client-grid {
+  display: block;
+}
+
+.client-info-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  gap: 6px 16px;
 }
 
 .client-name {
@@ -376,6 +380,34 @@ button:disabled {
 .address-card p {
   margin: 2px 0;
   font-size: 15px;
+}
+
+.address-grid {
+  display: grid;
+  grid-template-columns: repeat(3, max-content);
+  gap: 6px 18px;
+  align-items: start;
+}
+
+.address-main {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-weight: 600;
+}
+
+.address-detail {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.address-detail strong {
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .items-head {
@@ -444,6 +476,7 @@ button:disabled {
 }
 
 .quote-totals {
+  margin-top: 12px;
   padding: 0 0 6px;
 }
 
@@ -563,7 +596,7 @@ body.loading .loading-overlay {
   visibility: visible;
 }
 
-@media (max-width: 920px) {
+@media screen and (max-width: 920px) {
   .quote-header {
     padding-right: 0;
   }
@@ -585,12 +618,17 @@ body.loading .loading-overlay {
     grid-template-columns: 1fr;
   }
 
-  .client-grid {
+  .client-info-grid {
     grid-template-columns: 1fr;
   }
 
   .product-card {
     grid-template-columns: 56px 1fr;
+  }
+
+  .address-grid {
+    grid-template-columns: 1fr;
+    gap: 4px;
   }
 
   .product-side {
@@ -690,6 +728,20 @@ body.loading .loading-overlay {
     font-size: 18px;
   }
 
+  .client-grid {
+    display: block;
+  }
+
+  .client-info-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px 16px;
+  }
+
+  .address-grid {
+    grid-template-columns: repeat(3, max-content);
+    gap: 6px 10px;
+  }
+
   .client-name {
     font-size: 16px;
     margin-bottom: 6px;
@@ -707,8 +759,21 @@ body.loading .loading-overlay {
   }
 
   .product-card {
-    grid-template-columns: 44px 1fr auto;
+    grid-template-columns: 44px minmax(0, 1fr) auto;
     padding: 6px;
+  }
+
+  .product-main {
+    min-width: 0;
+  }
+
+  .product-side {
+    grid-column: auto;
+    justify-self: end;
+    text-align: right;
+    border-top: 0;
+    padding-top: 0;
+    white-space: nowrap;
   }
 
   .product-photo {
