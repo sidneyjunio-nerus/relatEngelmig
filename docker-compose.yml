@@ -1,7 +1,7 @@
 services:
   relatengelmig:
-    #image: ${GHCR_IMAGE}
-    build: .
+    image: ${GHCR_IMAGE}
+    #build: .
     container_name: relatengelmig
     restart: unless-stopped
 

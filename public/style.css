@@ -249,21 +249,27 @@ button:disabled {
 }
 
 .quote-header {
+  position: relative;
   border-bottom: 1px dashed #d1d5db;
+  padding-right: 180px;
   padding-bottom: 12px;
   margin-bottom: 14px;
 }
 
 .quote-head-main {
+  display: block;
+}
+
+.quote-id {
   display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  align-items: start;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .quote-label {
   margin: 0;
-  font-size: 10px;
+  font-size: 16px;
   color: var(--muted);
   letter-spacing: 0.12em;
   font-weight: 600;
@@ -276,12 +282,18 @@ button:disabled {
   line-height: 1;
 }
 
+.quote-id h3 {
+  margin: 0;
+}
+
 .quote-brand {
-  margin: 2px 0 0;
-  color: var(--primary);
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  font-size: 14px;
+  position: absolute;
+  top: -50px;
+  right: 0;
+  margin: 0;
+  width: 160px;
+  max-width: 100%;
+  height: auto;
 }
 
 .quote-vendor {
@@ -552,6 +564,23 @@ body.loading .loading-overlay {
 }
 
 @media (max-width: 920px) {
+  .quote-header {
+    padding-right: 0;
+  }
+
+  .quote-head-main {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: start;
+  }
+
+  .quote-brand {
+    position: static;
+    margin-top: 6px;
+    width: 120px;
+  }
+
   .search-form {
     grid-template-columns: 1fr;
   }
@@ -645,8 +674,16 @@ body.loading .loading-overlay {
     font-size: 20px;
   }
 
+  .quote-header {
+    padding-right: 160px;
+  }
+
   .quote-brand {
-    font-size: 16px;
+    position: absolute;
+    top: -50px;
+    right: 0;
+    margin: 0;
+    width: 140px;
   }
 
   .quote-section h4 {

@@ -8,6 +8,22 @@ const { buildBudgetViewModel } = require("./services/budgetBuilder");
 
 const app = express();
 const productsRepo = createProductsRepo(config.mysql);
+const MAX_SEARCH_CANDIDATES = 50;
+
+function normalizeToken(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (/^\d+$/.test(raw)) return raw.replace(/^0+(?=\d)/, "") || "0";
+  return raw.toLowerCase();
+}
+
+function isExactBudgetMatch(parsedBudget, loja, pedido) {
+  const parsedPedido = normalizeToken(parsedBudget?.fields?.PDNO);
+  const parsedLoja = normalizeToken(parsedBudget?.fields?.LJNO);
+  const requestedPedido = normalizeToken(pedido);
+  const requestedLoja = normalizeToken(loja);
+  return parsedPedido === requestedPedido && parsedLoja === requestedLoja;
+}
 
 function detectImageMime(buffer) {
   if (!buffer || buffer.length < 4) return "application/octet-stream";
@@ -63,7 +79,8 @@ app.post("/orcamento", async (req, res) => {
 
     const searchResult = await findBudgetFileByNeedles({
       rootDir: config.printRoot,
-      needles: [loja, pedido]
+      exactNeedles: [loja, pedido],
+      maxResults: MAX_SEARCH_CANDIDATES
     });
 
     if (!searchResult.foundPath) {
@@ -79,13 +96,40 @@ app.post("/orcamento", async (req, res) => {
       });
     }
 
-    console.info(
-      `[BUSCA] Arquivo encontrado | path="${searchResult.foundPath}" scannedFiles=${searchResult.scannedFiles} elapsedMs=${searchResult.elapsedMs}`
-    );
+    let parsedBudget = null;
+    let matchedPath = null;
+    const candidates = searchResult.foundPaths || (searchResult.foundPath ? [searchResult.foundPath] : []);
 
-    const parsedBudget = await readAndParseBudgetFile(searchResult.foundPath, { loja, pedido });
+    for (const candidatePath of candidates) {
+      const candidateParsed = await readAndParseBudgetFile(candidatePath, { loja, pedido });
+      console.info(
+        `[PARSER] Parse candidato | path="${candidatePath}" ljna="${candidateParsed.fields?.LJNA || ""}" ljno="${candidateParsed.fields?.LJNO || ""}" pdno="${candidateParsed.fields?.PDNO || ""}" itens=${candidateParsed.items?.length || 0}`
+      );
+      if (isExactBudgetMatch(candidateParsed, loja, pedido)) {
+        parsedBudget = candidateParsed;
+        matchedPath = candidatePath;
+        break;
+      }
+      console.warn(
+        `[BUSCA] Candidato ignorado por divergência | pedidoSolicitado="${pedido}" lojaSolicitada="${loja}" pedidoArquivo="${candidateParsed.fields?.PDNO || ""}" lojaArquivo="${candidateParsed.fields?.LJNO || ""}" path="${candidatePath}"`
+      );
+    }
+
+    if (!parsedBudget || !matchedPath) {
+      console.warn(
+        `[BUSCA] Nenhum arquivo válido após validação | loja="${loja}" pedido="${pedido}" candidatos=${candidates.length} scannedFiles=${searchResult.scannedFiles} elapsedMs=${searchResult.elapsedMs}`
+      );
+      return res.status(404).render("index", {
+        error: `Pedido "${pedido}" da loja "${loja}" não foi encontrado no diretório ${config.printRoot}.`,
+        warning: null,
+        budget: null,
+        baseInfo: { printRoot: config.printRoot, usedPath: null },
+        form: { loja, pedido }
+      });
+    }
+
     console.info(
-      `[PARSER] Parse concluído | ljna="${parsedBudget.fields?.LJNA || ""}" ljno="${parsedBudget.fields?.LJNO || ""}" pdno="${parsedBudget.fields?.PDNO || ""}" itens=${parsedBudget.items?.length || 0}`
+      `[BUSCA] Arquivo validado | path="${matchedPath}" scannedFiles=${searchResult.scannedFiles} elapsedMs=${searchResult.elapsedMs}`
     );
 
     const products = await productsRepo.getProductsByBudgetItems({ items: parsedBudget.items });
@@ -101,7 +145,7 @@ app.post("/orcamento", async (req, res) => {
       store: null,
       customer,
       defaultPhoto: config.defaultPhoto,
-      foundPath: searchResult.foundPath,
+      foundPath: matchedPath,
       metrics: {
         scannedFiles: searchResult.scannedFiles || 0,
         elapsedMs: searchResult.elapsedMs || 0
@@ -114,7 +158,7 @@ app.post("/orcamento", async (req, res) => {
       error: null,
       warning: null,
       budget,
-      baseInfo: { printRoot: config.printRoot, usedPath: searchResult.foundPath },
+      baseInfo: { printRoot: config.printRoot, usedPath: matchedPath },
       form: { loja, pedido }
     });
   } catch (error) {

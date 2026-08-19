@@ -40,6 +40,39 @@
         const fmtMoneyZero = (raw, num) => (raw && raw !== "-" ? raw : (typeof num === "number" ? brl.format(num) : brl.format(0)));
         const fmtQty = (raw, num) => (raw && raw !== "-" ? raw : (typeof num === "number" ? String(num) : "-"));
         const stripCodePrefix = (value) => String(value || "").replace(/^\s*\d+\s*-\s*/i, "").trim();
+        const stripLeadingDashes = (value) => String(value || "").replace(/^\s*(?:-\s*)+/, "").trim();
+        const cleanStoreField = (value) => stripLeadingDashes(String(value || "").replace(/\s+/g, " ").trim());
+        const buildPhone = (dddValue, telValue, fallbackValue) => {
+          const formatLocal = (digits) => {
+            if (digits.length === 8) return `${digits.slice(0, 4)}-${digits.slice(4)}`;
+            if (digits.length === 9) return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+            return digits;
+          };
+
+          const onlyDigits = (value) => String(value || "").replace(/\D+/g, "");
+          const ddd = onlyDigits(dddValue).slice(0, 2);
+          const telDigits = onlyDigits(telValue).replace(/^0+/, "");
+          const fallbackDigits = onlyDigits(fallbackValue).replace(/^0+/, "");
+
+          const phoneCandidates = [telDigits, fallbackDigits]
+            .map((digits) => {
+              if (!digits) return "";
+              if (ddd && digits.startsWith(ddd) && digits.length >= 10) {
+                const withoutDdd = digits.slice(2);
+                if (withoutDdd.length === 8 || withoutDdd.length === 9) return withoutDdd;
+              }
+              if (digits.length > 11) return digits.slice(-9);
+              if (digits.length === 10) return digits.slice(-8);
+              if (digits.length === 11) return digits.slice(-9);
+              return digits;
+            })
+            .filter((digits) => digits.length >= 8);
+
+          const local = phoneCandidates[0] || "";
+          if (!local) return "";
+          if (!ddd) return formatLocal(local);
+          return `${ddd} ${formatLocal(local)}`;
+        };
         const lojaLabel = budget.storeName || budget.fields.LJNA || budget.loja || "-";
         const lojaNo = budget.storeNo || budget.loja || "-";
         const orcamentoNo = budget.fields.PDNO || budget.pedido || "-";
@@ -49,7 +82,7 @@
         const customerCpf = customer.cpf || "-";
         const customerNascimento = customer.nascimento || "-";
         const customerEmail = customer.email || "-";
-        const customerTel = [customer.ddd, customer.tel].filter(Boolean).join(" ").replace(/\s+/g, " ").trim() || budget.fields.CTTL || "-";
+        const customerTel = buildPhone(customer.ddd, customer.tel, budget.fields.CTTL) || "-";
         const customerCel = customer.celular && customer.celular !== "0" ? customer.celular : "-";
         const customerEndereco = customer.endereco || budget.fields.CTED || "-";
         const customerNumero = customer.numero || "";
@@ -58,18 +91,25 @@
         const customerCidade = customer.cidade || budget.fields.CTCD || "-";
         const customerUf = customer.uf || "";
         const customerCep = customer.cep ? customer.cep.split(/\s+/)[0] : "-";
-        const lojaEndereco = [budget.fields.LJEN, budget.fields.LJBA].filter(Boolean).join(" - ");
-        const lojaCidadeUf = [budget.fields.LJCD, budget.fields.LJUF].filter(Boolean).join(" / ");
+        const lojaEndereco = [budget.fields.LJEN, budget.fields.LJBA]
+          .map((value) => cleanStoreField(value))
+          .filter((value) => value && value !== "-")
+          .join(" - ");
+        const lojaCidadeUf = [budget.fields.LJCD, budget.fields.LJUF]
+          .map((value) => cleanStoreField(value))
+          .filter((value) => value && value !== "-")
+          .join(" / ");
+        const lojaEnderecoCompleto = [lojaEndereco, lojaCidadeUf]
+          .filter(Boolean)
+          .join(" - ")
+          .replace(/^\s*(?:-\s*)+/, "")
+          .trim();
         const vendedorLabel = budget.fields.SPNO ? `${budget.fields.SPNO} - ${budget.fields.SPAP || ""}` : (budget.fields.SPAP || "-");
         const customerCityState = [customerCidade, customerUf].filter(Boolean).join(" - ");
         const paymentLabel = stripCodePrefix(budget.totals.PAGC || budget.fields.PGTO || "") || "0";
       %>
       <section class="budget budget-modern">
         <div class="budget-top">
-          <div class="budget-title-wrap">
-            <h2>Prévia do orçamento</h2>
-            <p>Layout moderno e limpo, no padrão visual do PDF de referência.</p>
-          </div>
           <button onclick="window.print()" type="button">Imprimir / PDF</button>
         </div>
 
@@ -77,11 +117,11 @@
           <section class="quote-top-card">
             <header class="quote-header">
               <div class="quote-head-main">
-                <div>
+                <div class="quote-id">
                   <p class="quote-label">ORÇAMENTO Nº</p>
                   <h3><%= orcamentoNo %></h3>
                 </div>
-                <p class="quote-brand">abc da construção</p>
+                <img class="quote-brand" src="/static/image.png" alt="Engelmig" />
               </div>
               <p class="quote-vendor">Vendedor: <strong><%= vendedorLabel %></strong></p>
             </header>
@@ -180,7 +220,7 @@
                 <p class="total-final"><span>TOTAL</span><strong><%= fmtMoneyZero(budget.totals.TDAC, budget.totals.totalFinal) %></strong></p>
               </div>
               <div class="store-footer">
-                <p>ENDEREÇO DA LOJA: <strong><%= lojaEndereco || "-" %> - <%= lojaCidadeUf || "-" %></strong></p>
+                <p>ENDEREÇO DA LOJA: <strong><%= lojaEnderecoCompleto || "-" %></strong></p>
                 <p>TELEFONE: <strong><%= budget.fields.LJTL || "-" %></strong></p>
               </div>
             </section>
