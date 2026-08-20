@@ -39,9 +39,14 @@
 
         <% if (budget) { %>
           <% const brl=new Intl.NumberFormat("pt-BR", { style: "currency" , currency: "BRL" }); const fmtMoney=(raw,
-            num)=> (raw && raw !== "-" ? raw : (typeof num === "number" ? brl.format(num) : "-"));
-            const fmtMoneyZero = (raw, num) => (raw && raw !== "-" ? raw : (typeof num === "number" ? brl.format(num) :
-            brl.format(0)));
+            num)=> {
+            const parsed = parseMoneyLike(raw, num);
+            return typeof parsed === "number" ? brl.format(parsed) : "-";
+            };
+            const fmtMoneyZero = (raw, num) => {
+            const parsed = parseMoneyLike(raw, num);
+            return typeof parsed === "number" ? brl.format(parsed) : brl.format(0);
+            };
             const fmtQty = (raw, num) => (raw && raw !== "-" ? raw : (typeof num === "number" ? String(num) : "-"));
             const stripCodePrefix = (value) => String(value || "").replace(/^\s*\d+\s*-\s*/i, "").trim();
             const stripLeadingDashes = (value) => String(value || "").replace(/^\s*(?:-\s*)+/, "").trim();
@@ -130,6 +135,9 @@
             isZeroOrMissing(acrescimoNum) && isZeroOrMissing(descontoNum);
             const compraRaw = shouldUseTotalAsPurchase ? (budget.totals.TDAC || budget.totals.SUBT) : budget.totals.SUBT;
             const compraNum = shouldUseTotalAsPurchase ? totalNum : subtotalNum;
+            const groupedItems = Array.isArray(budget.groupedItems) && budget.groupedItems.length
+            ? budget.groupedItems
+            : [{ categoria: "", items: budget.items || [] }];
             %>
             <section class="budget budget-modern">
               <div class="budget-top">
@@ -255,26 +263,37 @@
                       </span>
                     </div>
                     <div class="items-list">
-                      <% budget.items.forEach((item)=> { %>
-                        <article class="product-card">
-                          <img class="product-photo" src="<%= item.fotoUrl %>"
-                            alt="Foto do produto <%= item.ean || item.sku || item.codigo %>" loading="lazy" />
-                          <div class="product-main">
-                            <p class="product-name">
-                              <%= item.nome || "-" %>
-                            </p>
-                            <p class="product-meta">Cód. <%= item.codigo || "-" %> · Grade <%= item.grade || "-" %> · UN
-                                  <%= item.unidade || "-" %>
-                            </p>
-                          </div>
-                          <div class="product-side">
-                            <p class="qty-value">
-                              <%= fmtQty(item.quantidadeRaw, item.quantidade) %>
-                            </p>
-                            <p class="qty-label">Quantidade</p>
-                          </div>
-                        </article>
-                        <% }) %>
+                      <% groupedItems.forEach((group) => { %>
+                        <section class="category-group">
+                          <% if (group.categoria) { %>
+                            <h5 class="category-title"><%= group.categoria %></h5>
+                          <% } %>
+                          <% (group.items || []).forEach((item)=> { %>
+                            <article class="product-card">
+                              <% if (item.hasFoto) { %>
+                                <img class="product-photo" src="<%= item.fotoUrl %>"
+                                  alt="Foto do produto <%= item.ean || item.sku || item.codigo %>" loading="lazy" />
+                              <% } else { %>
+                                <div class="product-photo product-photo-placeholder" aria-label="Sem Foto">Sem Foto</div>
+                              <% } %>
+                              <div class="product-main">
+                                <p class="product-name">
+                                  <%= item.nome || "-" %>
+                                </p>
+                                <p class="product-meta">Cód. <%= item.codigo || "-" %> · Grade <%= item.grade || "-" %> · UN
+                                      <%= item.unidade || "-" %>
+                                </p>
+                              </div>
+                              <div class="product-side">
+                                <p class="qty-value">
+                                  <%= fmtQty(item.quantidadeRaw, item.quantidade) %>
+                                </p>
+                                <p class="qty-label">Quantidade</p>
+                              </div>
+                            </article>
+                          <% }) %>
+                        </section>
+                      <% }) %>
                     </div>
                   </section>
 

@@ -31,6 +31,25 @@ function stripCodePrefix(raw) {
     .trim();
 }
 
+function normalizeCategory(raw) {
+  return String(raw || "")
+    .replace(/^[\s\-–—:|]+/, "")
+    .replace(/[\s\-–—:|]+$/, "")
+    .trim();
+}
+
+function splitCategoryAndCode(raw) {
+  const value = String(raw || "").trim();
+  const match = value.match(/^(.+?)(\d{1,18})$/);
+  if (!match) return null;
+  const category = normalizeCategory(match[1]);
+  if (!category) return null;
+  return {
+    category,
+    codigo: match[2]
+  };
+}
+
 function extractEans(content) {
   const eans = new Set();
   const regex = /\b\d{8,14}\b/g;
@@ -188,6 +207,7 @@ function parseItems(lines) {
   let hasBarcodeColumn = false;
   let quantityOnlyLayout = false;
   let reachedFooter = false;
+  let currentCategory = "";
 
   for (const originalLine of lines) {
     if (reachedFooter) break;
@@ -220,10 +240,40 @@ function parseItems(lines) {
     }
 
     const columns = line.trim().split(/\s{2,}/).filter(Boolean);
-    if (columns.length < 2) continue;
+    if (columns.length === 1) {
+      const singleColumn = columns[0].trim();
+      if (singleColumn && !/\d/.test(singleColumn)) {
+        currentCategory = normalizeCategory(singleColumn);
+      }
+      continue;
+    }
 
-    const codigo = columns[0].trim();
-    if (!/^\d{1,18}$/.test(codigo)) continue;
+    let categoryFromRow = "";
+    let codigo = columns[0].trim();
+    let codeColumnIndex = 0;
+
+    if (!/^\d{1,18}$/.test(codigo)) {
+      if (columns.length >= 3 && /^\d{1,18}$/.test(columns[1].trim())) {
+        categoryFromRow = normalizeCategory(columns[0]);
+        codigo = columns[1].trim();
+        codeColumnIndex = 1;
+      } else {
+        const splitCode = splitCategoryAndCode(codigo);
+        if (splitCode) {
+          categoryFromRow = splitCode.category;
+          codigo = splitCode.codigo;
+        } else {
+          continue;
+        }
+      }
+    }
+
+    const columnsAfterCode = columns.slice(codeColumnIndex + 1);
+    if (!columnsAfterCode.length) continue;
+
+    const categoria = categoryFromRow || currentCategory || "";
+    if (categoryFromRow) currentCategory = categoryFromRow;
+
     let descricao = "";
     let grade = "";
     let barcode = "";
@@ -233,9 +283,9 @@ function parseItems(lines) {
     let totalLinhaRaw = "";
 
     if (quantityOnlyLayout) {
-      if (columns.length < 3) continue;
-      quantidadeRaw = columns[columns.length - 1].trim();
-      const payloadColumnsLegacy = columns.slice(1, -1);
+      if (columnsAfterCode.length < 2) continue;
+      quantidadeRaw = columnsAfterCode[columnsAfterCode.length - 1].trim();
+      const payloadColumnsLegacy = columnsAfterCode.slice(0, -1);
 
       const maybeUnit = payloadColumnsLegacy[payloadColumnsLegacy.length - 1] || "";
       const maybeGrade = payloadColumnsLegacy[payloadColumnsLegacy.length - 2] || "";
@@ -252,11 +302,11 @@ function parseItems(lines) {
         descricao = payloadColumnsLegacy.join(" ").trim();
       }
     } else {
-      if (columns.length < 5) continue;
-      quantidadeRaw = columns[columns.length - 3].trim();
-      valorUnitarioRaw = columns[columns.length - 2].trim();
-      totalLinhaRaw = columns[columns.length - 1].trim();
-      const payloadColumns = columns.slice(1, -3);
+      if (columnsAfterCode.length < 4) continue;
+      quantidadeRaw = columnsAfterCode[columnsAfterCode.length - 3].trim();
+      valorUnitarioRaw = columnsAfterCode[columnsAfterCode.length - 2].trim();
+      totalLinhaRaw = columnsAfterCode[columnsAfterCode.length - 1].trim();
+      const payloadColumns = columnsAfterCode.slice(0, -3);
 
       if (hasGradeColumn && hasBarcodeColumn && payloadColumns.length >= 3) {
         barcode = payloadColumns[payloadColumns.length - 1].trim();
@@ -298,6 +348,8 @@ function parseItems(lines) {
 
     items.push({
       codigo,
+      ambi: categoria,
+      categoria,
       descricao,
       grade,
       barcode,
@@ -331,21 +383,21 @@ function parseTotals(lines) {
     const value = cleanLine(line).trim();
     if (!value) continue;
 
-    let match = value.match(/^SubTotal\.\s*:\s*(.+)$/i);
+    let match = value.match(/^Sub\s*Total\.?\s*:\s*(.+)$/i);
     if (match) {
       totals.SUBT = match[1].trim();
       totals.subtotal = parseBrazilianNumber(match[1]);
       continue;
     }
 
-    match = value.match(/^Acrescimo:\s*(.+)$/i);
+    match = value.match(/^Acrescimo\.?\s*:\s*(.+)$/i);
     if (match) {
       totals.ACPO = match[1].trim();
       totals.acrescimo = parseBrazilianNumber(match[1]);
       continue;
     }
 
-    match = value.match(/^Desconto\.\s*:\s*(.+)$/i);
+    match = value.match(/^Desconto\.?\s*:\s*(.+)$/i);
     if (match) {
       totals.DESC = match[1].trim();
       totals.desconto = parseBrazilianNumber(match[1]);

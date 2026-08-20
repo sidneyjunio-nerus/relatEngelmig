@@ -19,15 +19,22 @@ function buildBudgetViewModel({ parsed, products, store, customer, defaultPhoto,
         ? `${gradeFriendly} (${gradeRaw})`
         : gradeFriendly
       : gradeRaw;
+    const categoria = String(item.categoria || item.ambi || "").trim();
+
+    const fotoUrl = fromDb?.fotoUrl || defaultPhoto;
+    const hasFoto = Boolean(fromDb?.fotoUrl);
 
     return {
       codigo: item.codigo || ean,
+      categoria,
+      ambi: categoria,
       grade: gradeDisplay || "",
       unidade: item.unidade || "",
       ean: fromDb?.barcode || item.barcode || null,
       sku: fromDb?.prdno || item.codigo || null,
       nome: fromDb?.nome || item.descricao || "Produto sem nome (pendente de mapeamento)",
-      fotoUrl: fromDb?.fotoUrl || defaultPhoto,
+      fotoUrl,
+      hasFoto,
       quantidade: item.quantidade ?? null,
       quantidadeRaw: item.quantidadeRaw || "",
       valorUnitario: item.valorUnitario ?? null,
@@ -36,6 +43,20 @@ function buildBudgetViewModel({ parsed, products, store, customer, defaultPhoto,
       totalLinhaRaw: item.totalLinhaRaw || ""
     };
   });
+
+  const groupedItems = [];
+  const groupedIndex = new Map();
+  for (const item of items) {
+    const categoryKey = String(item.categoria || "").trim();
+    if (!groupedIndex.has(categoryKey)) {
+      groupedIndex.set(categoryKey, groupedItems.length);
+      groupedItems.push({
+        categoria: categoryKey,
+        items: []
+      });
+    }
+    groupedItems[groupedIndex.get(categoryKey)].items.push(item);
+  }
 
   return {
     loja: parsed.loja,
@@ -48,6 +69,7 @@ function buildBudgetViewModel({ parsed, products, store, customer, defaultPhoto,
     arquivoBase: foundPath,
     totalItens: items.length,
     metrics,
+    groupedItems,
     items
   };
 }

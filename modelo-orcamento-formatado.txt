@@ -1,0 +1,99 @@
+{100,50
+\0                               ^E^BO R C A M E N T O^B^E             PAGINA [PAGI]
+-----------------------------------------------------------------------------------------------
+                   ENGELMIG COMERCIO DE MATERIAL DE CONSTRUCAO
+       AV DOUTOR JORGE HANNAS, S/N - PONTE DA ALDEIA - MANHUACU/ MG
+                          TELEFONE 3339-2000
+-----------------------------------------------------------------------------------------------
+DATA......: [DATA]      Numero: [PDNO]  Loja: [LJNO]
+Cliente...: [CTNO  ]  - [CTNA                                          ]
+Endereco..: [CTED                            ] - [CTBA                 ]
+Cidade....: [CTCD                            ] Fone: [CTTL             ]
+Vendedor..: [SPNO] - [SPNA                   ]
+---------------------------------------------------------------------------------------------
+ CODIGO                        DESCRICAO DOS PRODUTOS                    QUANTIDADE   
+---------------------------------------------------------------------------------------------
+  [AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ] 
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+&N-----------------------------------------------------------------------------------------------
+                                                        SUBTOTAL: [SUBT         ]
+CONTINUA NA PROXIMA PAGINA
+\f
+                               ^E^BO R C A M E N T O^B^E             PAGINA [PAGI]
+-----------------------------------------------------------------------------------------------
+                   ENGELMIG COMERCIO DE MATERIAL DE CONSTRUCAO
+       AV DOUTOR JORGE HANNAS, S/N - PONTE DA ALDEIA - MANHUACU/ MG
+                          TELEFONE 3339-2000
+-----------------------------------------------------------------------------------------------
+DATA......: [DATA]      Numero: [PDNO]
+Cliente...: [CTNO  ]  - [CTNA                                          ]
+Endereco..: [CTED                            ] - [CTBA                 ]
+Cidade....: [CTCD                            ] Fone: [CTTL             ]
+Vendedor..: [SPNO] - [SPNA                   ]
+---------------------------------------------------------
+CODIGO   DESCRICAO DOS PRODUTOS  QUANTIDADE     
+---------------------------------------------------------
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+#0[AMBI][PRNO  ]    [PRNA                                      ]  [GRD1    ]   [PRQ0     ]
+&R-----------------------------------------------------------------------------------------------
+- Condicao Pagamento: [METN ]-[METD                 ]              TOTAL:  [TDES      ] 
+                                   *** ATENCAO ***
+- VALIDADE: SUJEITO A DISPONIBILIDADE EM ESTOQUE NA  DATA  DE  CONFIRMACAO DO PEDIDO
+- NAO TROCAMOS PRODUTOS SOB ENCOMENDA
+- SEGUINDO ORIENTACAO DO MINISTERIO DO TRABALHO SO REALIZAMOS ENTREGA NO PRIMEIRO PAVIMENTO.
+- CONFIRA A QUANTIDADE E O ESTADO DAS MERCADORIAS NO ATO DO RECEBIMENTO, POIS NAO ACEITAREMOS
+  RECLAMACOES POSTERIORES.
+}

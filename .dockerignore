@@ -1,8 +1,25 @@
 node_modules
-npm-debug.log
+npm-debug.log*
+.DS_Store
+.vscode
+.idea
+.copilot
+
 .env
 .env.*
+
 .git
 .github
+
+# docs/anotações
 obsidian
-pendencias.md
+*.md
+
+# artefatos locais e exemplos de orçamento
+*.pdf
+*.txt
+*.prn
+
+# arquivos de orquestração que não são necessários em runtime
+Dockerfile
+docker-compose*.yml

@@ -32,6 +32,27 @@ function isSearchableBudgetFile(fileName) {
   return false;
 }
 
+function getExtensionPriority(fileName) {
+  const lowerName = String(fileName || "").toLowerCase();
+  const ext = path.extname(lowerName);
+  if (ext === ".txt") return 0;
+  if (ext === ".prn") return 1;
+  if (!ext) return 2;
+  return 3;
+}
+
+function sortCandidatesByPriority(candidates = []) {
+  return [...candidates].sort((a, b) => {
+    if (a.extensionPriority !== b.extensionPriority) {
+      return a.extensionPriority - b.extensionPriority;
+    }
+    if (a.mtimeMs !== b.mtimeMs) {
+      return b.mtimeMs - a.mtimeMs;
+    }
+    return a.path.localeCompare(b.path);
+  });
+}
+
 async function fileContainsNeedles(filePath, needles, exactNeedles) {
   const exactNeedleRegexes = exactNeedles.map((needle) => buildExactNeedleRegex(needle));
 
@@ -72,21 +93,30 @@ async function findFirstTextFileContainingAll({ rootDir, needles, exactNeedles =
   const startedAt = Date.now();
   const dirs = [rootDir];
   let scannedFiles = 0;
-  const foundPaths = [];
+  const foundCandidates = [];
 
   while (dirs.length) {
     const current = dirs.pop();
-    let dirHandle;
+    let dirEntries = [];
     try {
-      dirHandle = await fs.promises.opendir(current);
+      const dirHandle = await fs.promises.opendir(current);
+      for await (const entry of dirHandle) {
+        dirEntries.push(entry);
+      }
     } catch {
       continue;
     }
 
-    for await (const entry of dirHandle) {
+    const subDirs = [];
+    for (const entry of dirEntries) {
       const fullPath = path.join(current, entry.name);
       if (entry.isDirectory()) {
-        dirs.push(fullPath);
+        try {
+          const stats = await fs.promises.stat(fullPath);
+          subDirs.push({ path: fullPath, mtimeMs: Number(stats.mtimeMs) || 0 });
+        } catch {
+          subDirs.push({ path: fullPath, mtimeMs: 0 });
+        }
         continue;
       }
       if (!entry.isFile()) continue;
@@ -95,18 +125,30 @@ async function findFirstTextFileContainingAll({ rootDir, needles, exactNeedles =
       scannedFiles += 1;
       const contains = await fileContainsNeedles(fullPath, normalizedNeedles, normalizedExactNeedles);
       if (contains) {
-        foundPaths.push(fullPath);
-        if (foundPaths.length >= maxResults) {
-          return {
-            foundPath: foundPaths[0] || null,
-            foundPaths,
-            scannedFiles,
-            elapsedMs: Date.now() - startedAt
-          };
-        }
+        let mtimeMs = 0;
+        try {
+          const stats = await fs.promises.stat(fullPath);
+          mtimeMs = Number(stats.mtimeMs) || 0;
+        } catch {}
+        foundCandidates.push({
+          path: fullPath,
+          mtimeMs,
+          extensionPriority: getExtensionPriority(entry.name)
+        });
       }
     }
+
+    const sortedSubDirs = subDirs.sort((a, b) => {
+      if (a.mtimeMs !== b.mtimeMs) return b.mtimeMs - a.mtimeMs;
+      return a.path.localeCompare(b.path);
+    });
+    for (let index = sortedSubDirs.length - 1; index >= 0; index -= 1) {
+      dirs.push(sortedSubDirs[index].path);
+    }
   }
+
+  const sortedCandidates = sortCandidatesByPriority(foundCandidates);
+  const foundPaths = sortedCandidates.slice(0, maxResults).map((candidate) => candidate.path);
 
   return {
     foundPath: foundPaths[0] || null,
