@@ -43,18 +43,22 @@ O volume de arquivos TXT/PRN do cliente é montado via:
 
 e o app lê por `PRINT_ROOT=/v/saci/print`.
 
+> **Importante (porta no cliente):**
+> - A porta **interna do container** é `3210`.
+> - No cliente, use uma **porta de host livre** (a da esquerda no mapeamento).
+> - Para evitar conflito entre variável de ambiente e mapeamento, prefira:
+>
+> ```yml
+> ports:
+>   - "${HOST_PORT:-3210}:3210"
+> ```
+>
+> E no `.env`:
+>
+> ```env
+> HOST_PORT=4321
+> PORT=3210
+> ```
+
 5. **Gerar orçamento no PDV após configurar diretório de PRN**  
    Depois que o diretório dos PRNs estiver correto e o container em execução, realize um orçamento no PDV para gerar o arquivo e permitir a consulta no sistema.
-
-### 3) CI para PR
-
-O workflow `.github/workflows/docker-ci.yml` valida build de imagem em pull request (sem push).
-
-## Estrutura
-
-- `src/services/fileSearch.js`: busca otimizada no diretório `/u/saci/print`
-  - prioriza arquivos mais recentes com ordem: `.txt` → `.prn` → demais formatos textuais (PDF bloqueado)
-- `src/services/txtParser.js`: parser do layout TXT de orçamento (cabeçalho, itens, totais, EANs e categoria `AMBI`)
-- `src/services/productsRepo.js`: consultas MySQL nas tabelas `prd`, `prdbar` e `prdpicture`
-- `views/index.ejs`: tela com formulário e layout do orçamento
-- `pendencias.md`: pontos a fechar para versão final
